@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить продукт{% endblock %}
+
+{% block content %}
+  <h2>Добавить продукт</h2>
+  <form method="POST" action="/add">
+    <div class="mb-3">
+      <label for="name" class="form-label">Название</label>
+      <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+      <label for="type" class="form-label">Тип</label>
+      <input type="text" class="form-control" id="type" name="type" required>
+    </div>
+    <div class="mb-3">
+      <label for="manufacture_date" class="form-label">Дата изготовления</label>
+      <input type="date" class="form-control" id="manufacture_date" name="manufacture_date" required>
+    </div>
+    <div class="mb-3">
+      <label for="expiration_date" class="form-label">Срок годности</label>
+      <input type="date" class="form-control" id="expiration_date" name="expiration_date" required>
+    </div>
+    <div class="mb-3">
+      <label for="quantity" class="form-label">Количество</label>
+      <input type="number" step="0.01" class="form-control" id="quantity" name="quantity" required>
+    </div>
+    <div class="mb-3">
+      <label for="unit" class="form-label">Единица измерения</label>
+      <input type="text" class="form-control" id="unit" name="unit" required>
+    </div>
+    <div class="mb-3">
+      <label for="nutritional_value" class="form-label">Пищевая ценность</label>
+      <input type="text" class="form-control" id="nutritional_value" name="nutritional_value">
+    </div>
+    <div class="mb-3">
+      <label for="allergens" class="form-label">Аллергены</label>
+      <input type="text" class="form-control" id="allergens" name="allergens">
+    </div>
+    <button type="submit" class="btn btn-primary">Добавить</button>
+  </form>
+{% endblock %}

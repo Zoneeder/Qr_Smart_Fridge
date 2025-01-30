@@ -1,0 +1,46 @@
+<nav class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark sidebar-fullwidth">
+    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+      <span class="fs-4">Ваш холодильник</span>
+    </a>
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+      <li class="nav-item">
+        <a href="/" class="nav-link {% if active_page == 'home' %}active{% endif %}">
+          Содержимое
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/Qr-code" class="nav-link {% if active_page == 'Qr-code' %}active{% endif %}">
+          Отсканировать Qr-код
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/analytics" class="nav-link {% if active_page == 'analytics' %}active{% endif %}">
+          Аналитика потребления
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/shopping_list" class="nav-link {% if active_page == 'shopping_list' %}active{% endif %}">
+          Список покупок
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/add" class="nav-link {% if active_page == 'add' %}active{% endif %}">
+          Добавить продукт
+        </a>
+      </li>
+    </ul>
+    <hr>
+    <div class="dropdown">
+      <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <strong>User</strong>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+        <li><a class="dropdown-item" href="#">Настройки</a></li>
+        <li><a class="dropdown-item" href="#">Профиль</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#">Sign out</a></li>
+      </ul>
+    </div>
+  </nav>
+  
