@@ -10,12 +10,12 @@ app = Flask(__name__)
 #######################################
 
 def get_db_connection():
-    conn = sqlite3.connect("project/database/fridge.db")
+    conn = sqlite3.connect("database/fridge.db")
     conn.row_factory = sqlite3.Row
     return conn
 
 def get_db_connection_for_shopping_list():
-    connsl = sqlite3.connect('project/database/shopping_list.db')
+    connsl = sqlite3.connect('database/shopping_list.db')
     connsl.row_factory = sqlite3.Row
     return connsl
 
