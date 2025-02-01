@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h1>Список покупок</h1>
+  <h1>Список продуктов</h1>
   <div class="row">
-    {% for product in products %}
-      <div class="col-md-6">
-        <div class="card mb-1">
+    {% for shopping_product in shopping_list %}
+      <div class="col-md-12">
+        <div class="card mb-4">
           <div class="card-body">
-            <h5 class="card-title">{{ product.name }}</h5>
-            <p class="card-text">{{ product.type }}</p>
+            <h5 class="card-title">{{ shopping_product.name }}</h5>
+            <p class="card-text">{{ shopping_product.type }}</p>
           </div>
         </div>
       </div>

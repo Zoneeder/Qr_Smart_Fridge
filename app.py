@@ -37,7 +37,10 @@ def Qr_code():
 # Маршрут для страницы "Список покупок"
 @app.route('/shopping_list')
 def products():
-    return render_template('base.html', active_page='shopping_list')
+    conn = get_db_connection_for_shopping_list()
+    products = conn.execute('SELECT * FROM shopping_list').fetchall()  # Получаем все продукты из базы данных
+    conn.close()
+    return render_template('shopping_list.html', active_page='shopping_list', shopping_list=products)
 
 # Маршрут для добавления продукта
 @app.route('/add', methods=['GET', 'POST'])
