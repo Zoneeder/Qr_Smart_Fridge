@@ -1,17 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h1>Список продуктов</h1>
-  <div class="row">
-    {% for shopping_product in shopping_list %}
-      <div class="col-md-12">
-        <div class="card mb-4">
-          <div class="card-body">
-            <h5 class="card-title">{{ shopping_product.name }}</h5>
-            <p class="card-text">{{ shopping_product.type }}</p>
+  <div class="container">
+    <h1>Список продуктов</h1>
+    <div class="row">
+      {% for shopping_product in shopping_list %}
+        <div class="col-md-12">
+          <div class="card mb-4 w-50">
+            <div class="card-body">
+              <h5 class="card-title">{{ shopping_product.name }}</h5>
+              <div class="d-flex justify-content-between">
+                <span class="card-text">{{ shopping_product.type }}</span>
+                <span class="card-text">{{ shopping_product.amount }} {{ shopping_product.amount_type }}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    {% endfor %}
+      {% endfor %}
+    </div>
   </div>
 {% endblock %}

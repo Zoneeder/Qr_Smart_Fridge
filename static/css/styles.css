@@ -2,7 +2,11 @@
 .sidebar-fullwidth {
   width: 280px;
   height: 100vh;
-  background-color: #343a40; /* Темный фон для сайдбара */
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #343a40;
+  padding: 1rem;
 }
 
 .nav-link.active {
@@ -15,6 +19,6 @@
 }
 
 .content {
-  margin-left: 200px; /* Отступ для основного контента */
+  margin-left: 480px; /* Отступ для основного контента */
   padding: 20px;
 }
