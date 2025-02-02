@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
-import pandas as pd
 from datetime import datetime
 
 app = Flask(__name__)
@@ -35,7 +34,7 @@ def Qr_code():
     return render_template('base.html', active_page='Qr-code')
 
 # Маршрут для страницы "Список покупок"
-@app.route('/shopping_list')
+@app.route('/shopping_list', methods=['GET', 'POST'])
 def products():
     connsl = get_db_connection_for_shopping_list()
     shopping_list = connsl.execute('SELECT * FROM shopping_list').fetchall()  # Получаем все продукты из базы данных
