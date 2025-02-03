@@ -39,6 +39,20 @@ def products():
     connsl = get_db_connection_for_shopping_list()
     shopping_list = connsl.execute('SELECT * FROM shopping_list').fetchall()  # Получаем все продукты из базы данных
     connsl.close()
+    if request.method == 'POST':
+        # Получаем данные из формы
+        name = request.form['name']
+        amount = float(request.form['amount'])
+        amount_type = request.form['amount_type']
+
+        # Подключаемся к базе данных и добавляем продукт
+        connsl = get_db_connection_for_shopping_list()
+        connsl.execute('''
+        INSERT INTO shopping_list (name, amount, amount_type)
+        VALUES (?, ?, ?)
+        ''', (name, amount, amount_type))
+        connsl.commit()
+        connsl.close()
     return render_template('shopping_list.html', active_page='shopping_list', shopping_list=shopping_list)
 
 # Маршрут для добавления продукта
