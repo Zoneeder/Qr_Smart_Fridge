@@ -22,3 +22,8 @@
   margin-left: 480px; /* Отступ для основного контента */
   padding: 20px;
 }
+
+/* my-margin-end */
+.mme {
+  margin-right: 100px;
+}

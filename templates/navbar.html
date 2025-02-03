@@ -1,46 +1,116 @@
-<nav class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark sidebar-fullwidth">
-    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
-      <span class="fs-4">Ваш холодильник</span>
-    </a>
-    <hr>
-    <ul class="nav nav-pills flex-column mb-auto">
-      <li class="nav-item">
-        <a href="/" class="nav-link {% if active_page == 'home' %}active{% endif %}">
-          Содержимое
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="/Qr-code" class="nav-link {% if active_page == 'Qr-code' %}active{% endif %}">
-          Отсканировать Qr-код
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="/analytics" class="nav-link {% if active_page == 'analytics' %}active{% endif %}">
-          Аналитика потребления
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="/shopping_list" class="nav-link {% if active_page == 'shopping_list' %}active{% endif %}">
-          Список покупок
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="/add" class="nav-link {% if active_page == 'add' %}active{% endif %}">
-          Добавить продукт
-        </a>
-      </li>
-    </ul>
-    <hr>
+<nav class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark sidebar-fullwidth" style="height: 100vh;">
+  <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+    <span class="fs-4">Ваш холодильник</span>
+  </a>
+  <hr>
+  <ul class="nav nav-pills flex-column mb-auto">
+    <li class="nav-item">
+      <a href="/" class="nav-link {% if active_page == 'home' %}active{% endif %}">
+        Содержимое
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="/Qr-code" class="nav-link {% if active_page == 'Qr-code' %}active{% endif %}">
+        Отсканировать Qr-код
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="/analytics" class="nav-link {% if active_page == 'analytics' %}active{% endif %}">
+        Аналитика потребления
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="/shopping_list" class="nav-link {% if active_page == 'shopping_list' %}active{% endif %}">
+        Список покупок
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="/add" class="nav-link {% if active_page == 'add' %}active{% endif %}">
+        Добавить продукт
+      </a>
+    </li>
+  </ul>
+  <hr>
+  <div class="d-flex justify-content-between align-items-center">
+    <!-- Dropdown для настроек пользователя -->
     <div class="dropdown">
       <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-        <strong>User</strong>
+        <strong>
+          {% if session.user_id %}
+            {{ session.username }}
+          {% else %}
+            User
+          {% endif %}
+        </strong>
       </a>
       <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
-        <li><a class="dropdown-item" href="#">Настройки</a></li>
-        <li><a class="dropdown-item" href="#">Профиль</a></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item" href="#">Sign out</a></li>
+        {% if session.user_id %}
+          <li><a class="dropdown-item" href="#">Профиль</a></li>
+          <li><a class="dropdown-item" href="#">Настройки</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{{ url_for('logout') }}">Выход</a></li>
+        {% else %}
+          <li><a class="dropdown-item" href="{{ url_for('login') }}">Войти</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('register') }}">Регистрация</a></li>
+        {% endif %}
       </ul>
     </div>
-  </nav>
-  
+    <!-- Кнопка уведомлений -->
+    <div>
+      <div class="position-relative">
+        <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-bell fs-6"></i>
+          {% if notifications_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{ notifications_count }}
+              <span class="visually-hidden">unread messages</span>
+            </span>
+          {% endif %}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark text-small" id="notifications-dropdown">
+          {% if notifications and notifications|length > 0 %}
+            {% for notification in notifications %}
+              <li>
+                <a class="dropdown-item notification-item" href="#" data-product-id="{{ notification.id }}">
+                  {{ notification.message }}
+                </a>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li><span class="dropdown-item-text">Нет уведомлений</span></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Скрипт для обработки клика по уведомлению -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.notification-item').forEach(function(item) {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      var productId = this.getAttribute('data-product-id');
+      var self = this;
+      fetch('/dismiss_notification/' + productId, { method: 'POST' })
+        .then(function(response) {
+          if (response.ok) {
+            // Удаляем уведомление из выпадающего списка
+            self.parentElement.remove();
+            // Обновляем счетчик уведомлений (если он есть)
+            var badge = document.querySelector('.badge');
+            if (badge) {
+              var count = parseInt(badge.innerText) - 1;
+              if (count <= 0) {
+                badge.remove();
+              } else {
+                badge.innerText = count;
+              }
+            }
+          }
+        });
+    });
+  });
+});
+</script>

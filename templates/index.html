@@ -2,17 +2,50 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <h1>Продукты в холодильнике</h1>
-  <div class="row">
-    {% for product in products %}
-      <div class="col-md-6">
-        <div class="card mb-4">
-          <div class="card-body">
-            <h5 class="card-title">{{ product.name }}</h5>
-            <p class="card-text">{{ product.type }}</p>
+  <div class="w-50">
+    <h1>Продукты в холодильнике</h1>
+    <div class="row">
+      {% for product in products %}
+        <div class="col-md-12">
+          <div class="card mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h5 class="card-title">{{ product.name }}</h5>
+                  <p class="card-text">{{ product.type }}</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <div>
+                    <h6>Годен до:</h6>
+                    <p class="card-text mb-0">{{ product.expiration_date }}</p>
+                  </div>
+                  <div>
+                    <button type="button" class="btn btn-lg btn-sm btn-primary" data-bs-toggle="popover" data-bs-html="true" data-bs-content="Аллергены: <br> {{ product.allergens if product.allergens else '-' }} <br> Дата изготовления: <br> {{ product.manufacture_date }} <br> Количество: <br> {{ product.quantity }} {{ product.unit }}">
+                      <i class="bi bi-info-circle fs-6"></i>
+                    </button>
+                    <script>
+                      document.addEventListener("DOMContentLoaded", function () {
+                        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+                        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                          var popover = new bootstrap.Popover(popoverTriggerEl);
+                          popoverTriggerEl.addEventListener('show.bs.popover', function () {
+                            popoverList.forEach(function (p) {
+                              if (p !== popover) {
+                                p.hide();
+                              }
+                            });
+                          });
+                          return popover;
+                        });
+                      });
+                    </script>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    {% endfor %}
+      {% endfor %}
+    </div>
   </div>
 {% endblock %}
