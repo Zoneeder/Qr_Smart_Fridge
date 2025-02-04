@@ -101,19 +101,30 @@ def logout():
 # Маршрут для главной страницы
 @app.route('/')
 def home():
+    # Если пользователь не аутентифицирован, можно перенаправить на страницу входа
+    if 'user_id' not in session:
+        flash("Пожалуйста, войдите в систему", "danger")
+        return redirect(url_for('login'))
+
     conn = get_db_connection()
-    products = conn.execute('SELECT * FROM products').fetchall()  # Получаем все продукты из базы данных
+    # Выбираем продукты только для текущего пользователя
+    products = conn.execute('SELECT * FROM products WHERE user_id = ?', (session['user_id'],)).fetchall()
     conn.close()
     return render_template('index.html', active_page='home', products=products)
+
 
 # Маршрут для страницы "Отсканировать Qr-код"
 @app.route('/Qr-code')
 def Qr_code():
-    return render_template('base.html', active_page='Qr-code')
+    return render_template('Qr-code.html', active_page='Qr-code')
 
 # Маршрут для страницы "Список покупок"
 @app.route('/shopping_list', methods=['GET', 'POST'])
 def products():
+    if 'user_id' not in session:
+        flash("Пожалуйста, войдите в систему", "danger")
+        return redirect(url_for('login'))
+
     connsl = get_db_connection_for_shopping_list()
     shopping_list = connsl.execute('SELECT * FROM shopping_list ORDER BY id DESC').fetchall()  # Получаем все продукты из базы данных
     connsl.close()
@@ -144,8 +155,11 @@ def delete_product(product_id):
 # Маршрут для добавления продукта
 @app.route('/add', methods=['GET', 'POST'])
 def add_product():
+    if 'user_id' not in session:
+        flash("Пожалуйста, войдите в систему", "danger")
+        return redirect(url_for('login'))
+        
     if request.method == 'POST':
-        # Получаем данные из формы
         name = request.form['name']
         product_type = request.form['type']
         manufacture_date = request.form['manufacture_date']
@@ -155,20 +169,18 @@ def add_product():
         nutritional_value = request.form.get('nutritional_value', '')
         allergens = request.form.get('allergens', '')
 
-        # Подключаемся к базе данных и добавляем продукт
         conn = get_db_connection()
+        # Добавляем также user_id для связывания продукта с пользователем
         conn.execute('''
-        INSERT INTO products (name, type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (name, product_type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens))
+        INSERT INTO products (user_id, name, type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (session['user_id'], name, product_type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens))
         conn.commit()
         conn.close()
-
-        # Перенаправляем на главную страницу
         return redirect(url_for('home'))
 
-    # Если метод GET, отображаем форму добавления продукта
     return render_template('add_product.html', active_page='add')
+
 
 @app.route('/analytics')
 def analytics():
@@ -176,19 +188,20 @@ def analytics():
 
 @app.context_processor
 def inject_notifications():
-    # Получаем список отклонённых уведомлений из сессии
+    # Если пользователь не авторизован, не отображаем уведомления
+    if 'user_id' not in session:
+        return dict(notifications=[], notifications_count=0)
+        
     dismissed = session.get('dismissed_notifications', [])
     conn = get_db_connection()
-    # Запрашиваем id, имя и дату истечения срока для всех продуктов
-    products = conn.execute('SELECT id, name, expiration_date FROM products').fetchall()
+    # Выбираем продукты для текущего пользователя
+    products = conn.execute('SELECT id, name, expiration_date FROM products WHERE user_id = ?', (session['user_id'],)).fetchall()
     conn.close()
-    
+
     notifications = []
     today = datetime.today().date()
-    warning_days = 3  # Предупреждать за 3 дня до истечения
-    
+    warning_days = 3
     for product in products:
-        # Если уведомление для этого продукта уже было отклонено, пропускаем его
         if product['id'] in dismissed:
             continue
         exp_date = datetime.strptime(product['expiration_date'], '%Y-%m-%d').date()
@@ -196,10 +209,10 @@ def inject_notifications():
         if days_left <= warning_days:
             notifications.append({
                 'id': product['id'],
-                'message': f"{product['name']} скоро испортится! Осталось {days_left}  дн."
+                'message': f"{product['name']} скоро испортится! Осталось {days_left} дн."
             })
-    
     return dict(notifications=notifications, notifications_count=len(notifications))
+
 
 @app.route('/dismiss_notification/<int:product_id>', methods=['POST'])
 def dismiss_notification(product_id):
