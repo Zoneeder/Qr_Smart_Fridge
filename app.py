@@ -1,6 +1,7 @@
 from flask import *
 import sqlite3
 from datetime import datetime
+import json
 
 app = Flask(__name__)
 app.secret_key = "top_secret"  # Замените на свой секретный ключ
@@ -114,8 +115,37 @@ def home():
 
 
 # Маршрут для страницы "Отсканировать Qr-код"
-@app.route('/Qr-code')
-def Qr_code():
+@app.route('/Qr-code', methods=['GET', 'POST'])
+def qr_code():
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            print("Полученные данные:", data)  # Лог в консоль
+
+            conn = get_db_connection()
+            conn.execute('''
+                INSERT INTO products (user_id, name, type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                session.get('user_id', -1),  # Временно ставим 1, если нет сессии
+                data["name"],
+                data["type"],
+                data["manufacture_date"],
+                data["expiration_date"],
+                data["quantity"],
+                data["unit"],
+                data["nutritional_value"],
+                data.get("allergens", "-")  # Если нет аллергенов, ставим "-"
+            ))
+            conn.commit()
+            conn.close()
+
+            return jsonify({"success": True, "message": "QR-код сохранен"}), 200
+
+        except Exception as e:
+            print("Ошибка при обработке запроса:", e)
+            return jsonify({"success": False, "error": str(e)}), 400
+
     return render_template('Qr-code.html', active_page='Qr-code')
 
 # Маршрут для страницы "Список покупок"
@@ -152,34 +182,34 @@ def delete_product(product_id):
     connsl.close()
     return redirect(url_for('products'))
 
-# Маршрут для добавления продукта
-@app.route('/add', methods=['GET', 'POST'])
-def add_product():
-    if 'user_id' not in session:
-        flash("Пожалуйста, войдите в систему", "danger")
-        return redirect(url_for('login'))
+# # Маршрут для добавления продукта
+# @app.route('/add', methods=['GET', 'POST'])
+# def add_product():
+#     if 'user_id' not in session:
+#         flash("Пожалуйста, войдите в систему", "danger")
+#         return redirect(url_for('login'))
         
-    if request.method == 'POST':
-        name = request.form['name']
-        product_type = request.form['type']
-        manufacture_date = request.form['manufacture_date']
-        expiration_date = request.form['expiration_date']
-        quantity = float(request.form['quantity'])
-        unit = request.form['unit']
-        nutritional_value = request.form.get('nutritional_value', '')
-        allergens = request.form.get('allergens', '')
+#     if request.method == 'POST':
+#         name = request.form['name']
+#         product_type = request.form['type']
+#         manufacture_date = request.form['manufacture_date']
+#         expiration_date = request.form['expiration_date']
+#         quantity = float(request.form['quantity'])
+#         unit = request.form['unit']
+#         nutritional_value = request.form.get('nutritional_value', '')
+#         allergens = request.form.get('allergens', '')
 
-        conn = get_db_connection()
-        # Добавляем также user_id для связывания продукта с пользователем
-        conn.execute('''
-        INSERT INTO products (user_id, name, type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (session['user_id'], name, product_type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens))
-        conn.commit()
-        conn.close()
-        return redirect(url_for('home'))
+#         conn = get_db_connection()
+#         # Добавляем также user_id для связывания продукта с пользователем
+#         conn.execute('''
+#         INSERT INTO products (user_id, name, type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens)
+#         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+#         ''', (session['user_id'], name, product_type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens))
+#         conn.commit()
+#         conn.close()
+#         return redirect(url_for('home'))
 
-    return render_template('add_product.html', active_page='add')
+#     return render_template('add_product.html', active_page='add')
 
 
 @app.route('/analytics')

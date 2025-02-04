@@ -48,11 +48,57 @@ startButton.addEventListener('click', function(){
               if (!scannedCodes.has(qrCodeMessage)) {
                 scannedCodes.add(qrCodeMessage);
                 // Формируем HTML для карточки с отсканированной информацией
+                var data = JSON.parse(qrCodeMessage);
+                console.log("Полученный объект:", data);
                 var cardHTML = `
                   <div class="card mb-3">
                     <div class="card-body">
-                      <h5 class="card-title">Отсканированная информация</h5>
-                      <p class="card-text">${qrCodeMessage}</p>
+                      <div class="d-flex">
+                        <div>
+                          <h5 class="card-title">${data["name"]}</h5>
+                          <hr>
+                          <div class="d-flex justify-content-between align-items-center">
+                            <div class="me-2 ms-2">
+                              <h6>Тип:</h6>
+                              <p class="card-text">${data["type"]}</p>
+                            </div>
+                            <div class="vr"></div>
+                            <div class="me-2 ms-2">
+                              <h6>Дата изготовления:</h6>
+                              <p class="card-text">${data["manufacture_date"]}</p>
+                            </div>
+                            <div class="vr"></div>
+                            <div class="me-2 ms-2">
+                              <h6>Годен до:</h6>
+                              <p class="card-text">${data["expiration_date"]}</p>
+                            </div>
+                            <div class="vr"></div>
+                            <div class="me-2 ms-2">
+                              <h6>Количество:</h6>
+                              <p class="card-text">
+                                ${data["quantity"]} ${data["unit"]}
+                              </p>
+                            </div>
+                            <div class="vr"></div>
+                            <div class="me-2 ms-2">
+                              <h6>Энергетическая ценность:</h6>
+                              <p class="card-text">
+                                ${data["nutritional_value"]} кал
+                              </p>
+                            </div>
+                            <div class="vr"></div>
+                            <div class="ms-2">
+                              <h6>Аллергены:</h6>
+                              <p class="card-text">${ data["allergens"] || '-' }</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <button class="btn btn-primary send-data-btn" data-info='${JSON.stringify(data)}'>
+                            <i class="bi bi-plus-lg"></i>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 `;
@@ -94,5 +140,29 @@ stopButton.addEventListener('click', function(){
     });
   }
 });
+
+// Обработчик клика по кнопке для отправки данных
+document.getElementById('card-container').addEventListener('click', function(event) {
+  let button = event.target.closest(".send-data-btn"); 
+  if (!button) return; 
+
+  let data = JSON.parse(button.getAttribute("data-info"));
+
+  fetch('/Qr-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(result => {
+    console.log("Ответ сервера:", result);
+    if (result.success) {
+      card.remove();
+    }
+  })
+  .catch(error => console.error("Ошибка отправки:", error));
+});
+
+
 </script>
 {% endblock %}
