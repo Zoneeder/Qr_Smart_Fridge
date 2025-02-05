@@ -67,7 +67,7 @@
             </span>
           {% endif %}
         </button>
-        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark text-small" id="notifications-dropdown">
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark text-small" id="notifications-dropdown" style="z-index: 2000;">
           {% if notifications and notifications|length > 0 %}
             {% for notification in notifications %}
               <li>
