@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container p-3">
   <div class="d-flex">
-    <div class="w-75 p-2">
+    <div class="w-75 me-3">
       <h1 class="mb-3">Список покупок</h1>
       <div class="row">
         {% for shopping_product in shopping_list %}
@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <div class="w-50 p-2">
+    <div class="w-50">
       <h2 class="mb-3">Добавить продукт</h2>
       <form method="POST" action="/shopping_list">
         <div class="mb-3">

@@ -1,33 +1,31 @@
 /* static/css/styles.css */
-.sidebar-fullwidth {
-  width: 280px;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  background-color: #343a40;
-  padding: 1rem;
-}
-
-.nav-link.active {
-  background-color: #f9f9f9;
-  color: rgb(1, 1, 1) !important;
-}
-
-.nav-link {
-  color: white !important; /* Белый текст по умолчанию */
-}
-
-.content {
-   /* Отступ для основного контента */
-  padding: 20px;
-}
 
 /* my-margin-end */
 .mme {
   margin-right: 100px;
 }
 
-.dropdown-menu {
-  z-index: 2000 !important;
+main {
+  display: flex;
+  flex-wrap: nowrap;
+  height: 100vh;
+  height: -webkit-fill-available;
+  max-height: 100vh;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 280px;
+  padding: 1rem;
+  background-color: #343a40;
+  color: white;
+  overflow-y: auto;
+}
+
+body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
 }
