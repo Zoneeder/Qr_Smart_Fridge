@@ -11,9 +11,15 @@
 </head>
 <body>
 
-  <main>
-    {% include 'navbar.html' %}
-    {% block content %}{% endblock %}
+  <main class="container-fluid">
+    <div class="row">
+      <div class="col-1 px-1 bg-dark position-fixed">
+        {% include 'navbar.html' %}
+      </div>
+      <div class="col-9 offset-3">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

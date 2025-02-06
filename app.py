@@ -182,35 +182,6 @@ def delete_product(product_id):
     connsl.close()
     return redirect(url_for('products'))
 
-# # Маршрут для добавления продукта
-# @app.route('/add', methods=['GET', 'POST'])
-# def add_product():
-#     if 'user_id' not in session:
-#         flash("Пожалуйста, войдите в систему", "danger")
-#         return redirect(url_for('login'))
-        
-#     if request.method == 'POST':
-#         name = request.form['name']
-#         product_type = request.form['type']
-#         manufacture_date = request.form['manufacture_date']
-#         expiration_date = request.form['expiration_date']
-#         quantity = float(request.form['quantity'])
-#         unit = request.form['unit']
-#         nutritional_value = request.form.get('nutritional_value', '')
-#         allergens = request.form.get('allergens', '')
-
-#         conn = get_db_connection()
-#         # Добавляем также user_id для связывания продукта с пользователем
-#         conn.execute('''
-#         INSERT INTO products (user_id, name, type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens)
-#         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-#         ''', (session['user_id'], name, product_type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens))
-#         conn.commit()
-#         conn.close()
-#         return redirect(url_for('home'))
-
-#     return render_template('add_product.html', active_page='add')
-
 
 @app.route('/analytics')
 def analytics():
