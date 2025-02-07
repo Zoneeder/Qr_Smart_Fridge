@@ -5,46 +5,17 @@
   margin-right: 100px;
 }
 
-/* Фиксированный сайдбар */
 .sidebar {
-  position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
-  width: 12%; /* 20% от ширины окна */
-  padding: 2%;
-  background-color: #1e262e;
+  width: 280px;
+  padding: 1rem;
+  background-color: #343a40;
   color: white;
   overflow-y: auto;
 }
 
 body {
   min-height: 100vh;
-  margin: 0;
 }
-
-/* Прочие стили */
-.nav-link.active {
-  background-color: #f9f9f9;
-  color: rgb(1, 1, 1) !important;
-}
-
-.nav-link {
-  color: white !important;
-}
-
-/* Основной контент с отступом от сайдбара */
-.main-content {
-  margin-left: 12%;
-  margin-right: 15%; /* отступ равен ширине сайдбара */
-  padding: 1%;
-  display: flex;
-  justify-content: center;
-}
-
-/* Ограничение ширины основного содержимого */
-.content-container {
-  width: 100%;
-  max-width: 50%; /* например, 80% для ограничения по горизонтали */
-  margin: 0 auto;
-} 

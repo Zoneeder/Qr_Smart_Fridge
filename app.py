@@ -223,5 +223,6 @@ def dismiss_notification(product_id):
         session['dismissed_notifications'] = dismissed
     return '', 204
 
+
 if __name__ == '__main__':
     app.run(debug=True)
