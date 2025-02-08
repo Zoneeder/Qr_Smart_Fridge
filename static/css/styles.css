@@ -5,6 +5,23 @@
   margin-right: 100px;
 }
 
+/* my-margin-start */
+.mms {
+  margin-left: 10%;
+}
+
+@media (max-width: 768px) {
+  .mms {
+    margin-left: 20%;
+  }
+}
+
+@media (max-width: 480px) {
+  .mms {
+    margin-left: 30%;
+  }
+}
+
 .sidebar {
   top: 0;
   bottom: 0;
@@ -26,4 +43,50 @@ body {
 
 .nav-link {
   color: white !important;
+}
+
+/* Ограничиваем максимальную ширину контейнера графика */
+#chart-container {
+  max-width: 1100px;       /* максимальная ширина */
+  margin: 0 auto;         /* центрирование */
+  padding: 10px;          /* отступы */
+  box-sizing: border-box; /* чтобы padding не увеличивал итоговую ширину */
+  margin-left: 200px;
+}
+
+/* Задаем размеры для canvas, чтобы график не вытягивался */
+#analyticsChart {
+  width: 100% !important; /* используем всю ширину контейнера */
+  height: 600px !important; /* фиксированная высота (можно менять) */
+}
+
+.qr-card {
+  display: inline-block;           /* Делаем элемент строчно-блочным */
+  width: -moz-fit-content;          /* Поддержка для Firefox */
+  width: -webkit-fit-content;       /* Поддержка для старых браузеров на базе WebKit */
+  width: fit-content;               /* Современные браузеры */
+  max-width: 100%;                  /* Чтобы не выходил за пределы родительского контейнера */
+  padding: 10px;                   /* Отступы внутри карточки */
+  box-sizing: border-box;          /* Чтобы padding не влиял на итоговую ширину */
+}
+
+/* Класс для адаптивного контейнера, учитывающего отступы справа и слева */
+.container-adaptive {
+  /* Вычитаем 20% от общей ширины экрана – это отступ по 10% с каждой стороны */
+  width: calc(100% - 20%);
+  margin: 0 auto;
+}
+
+/* На экранах до 992px уменьшаем суммарный отступ до 10% */
+@media (max-width: 992px) {
+  .container-adaptive {
+    width: calc(100% - 10%);
+  }
+}
+
+/* На экранах до 768px уменьшаем отступ еще больше – например, до 5% */
+@media (max-width: 768px) {
+  .container-adaptive {
+    width: calc(100% - 5%);
+  }
 }

@@ -16,8 +16,11 @@
       <div class="col-12 col-sm-4 col-md-3 col-lg-2 px-1 bg-dark position-fixed">
         {% include 'navbar.html' %}
       </div>
-      <div class="col-12 col-sm-8 col-md-9 col-lg-10 offset-sm-4 offset-md-3 offset-lg-2 p-3" id="main-content">
-        {% block content %}{% endblock %}
+      <div class="col-12 col-sm-8 col-md-9 col-lg-10 offset-sm-4 offset-md-3 offset-lg-2 p-3">
+        <!-- Оборачиваем содержимое основного контента в адаптивный контейнер -->
+        <div class="container-adaptive">
+          {% block content %}{% endblock %}
+        </div>
       </div>
     </div>
   </main>

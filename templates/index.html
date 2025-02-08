@@ -4,11 +4,17 @@
 {% block content %}
   <div class="container-fluid">
     <h1>Продукты в холодильнике</h1>
-    <hr>
+    <hr style="width: 45%;">
+    <form method="GET" action="{{ url_for('home') }}">
+      <div class="input-group mb-3" style="width: 45%;">
+        <input type="text" class="form-control" placeholder="Поиск продуктов" name="search" value="{{ request.args.get('search', '') }}">
+        <button class="btn btn-outline-secondary" type="submit">Поиск</button>
+      </div>
+    </form>
     <div class="row">
       {% for product in products %}
         <div class="col-md-12">
-          <div class="card mb-4" style="width: 600 px;">
+          <div class="card mb-4" style="width: 45%;">
             <div class="card-body">
               <div class="d-flex justify-content-between">
                 <div>
@@ -20,27 +26,18 @@
                     <h6 align="center">Годен до:</h6>
                     <p class="card-text mb-0">{{ product.expiration_date }}</p>
                   </div>
-                  <div class="vr"></div>
+                  <div class="vr"></div>                 
                   <div>
-                    <button type="button" class="btn btn-lg btn-sm btn-primary" data-bs-toggle="popover" data-bs-html="true" data-bs-content="Аллергены: <br> {{ product.allergens if product.allergens else '-' }} <br> Дата изготовления: <br> {{ product.manufacture_date }} <br> Количество: <br> {{ product.quantity }} {{ product.unit }}">
+                    <button type="button" class="btn btn-lg btn-sm btn-outline-primary" data-bs-toggle="popover" data-bs-html="true" data-bs-content="Аллергены: <br> {{ product.allergens if product.allergens else '-' }} <hr> Дата изготовления: <br> {{ product.manufacture_date }} <hr> Количество: <br> {{ product.quantity }} {{ product.unit }} <hr> Энергетическая ценность: <br> {{ product.nutritional_value }}">
                       <i class="bi bi-info-circle fs-6"></i>
                     </button>
-                    <script>
-                      document.addEventListener("DOMContentLoaded", function () {
-                        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-                        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-                          var popover = new bootstrap.Popover(popoverTriggerEl);
-                          popoverTriggerEl.addEventListener('show.bs.popover', function () {
-                            popoverList.forEach(function (p) {
-                              if (p !== popover) {
-                                p.hide();
-                              }
-                            });
-                          });
-                          return popover;
-                        });
-                      });
-                    </script>
+                  </div>
+                  <div>
+                    <!-- Кнопка для QR, popover содержит изображение QR-кода, сгенерированное на сервере -->
+                    <button type="button" class="btn btn-lg btn-sm btn-outline-primary qr-popover" 
+                      data-product-id="{{ product.id }}" data-bs-toggle="popover" data-bs-trigger="manual">
+                      <i class="bi bi-qr-code fs-6"></i>
+                    </button>
                   </div>
                   <div>
                     <form method="POST" action="{{ url_for('delete_product_from_index', product_id=product.id) }}" style="display:inline;">
@@ -57,4 +54,68 @@
       {% endfor %}
     </div>
   </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Инициализация popover для кнопок с классом qr-popover, которые показывают QR-код
+      var qrButtons = document.querySelectorAll('.qr-popover');
+      qrButtons.forEach(function (btn) {
+        var productId = btn.getAttribute('data-product-id');
+        var popoverContent = '<img src="/qr_image/' + productId + '" class="img-fluid" style="max-width:200px;" onerror="this.onerror=null;this.src=\'/static/images/placeholder.png\';">';
+        var popover = new bootstrap.Popover(btn, {
+          html: true,
+          trigger: 'manual',
+          content: popoverContent,
+          placement: 'right'
+        });
+
+        // Добавляем обработчик клика для открытия/закрытия popover
+        btn.addEventListener('click', function (event) {
+          if (btn.getAttribute('aria-describedby')) {
+            popover.hide();
+          } else {
+            popover.show();
+          }
+          event.stopPropagation();
+        });
+      });
+
+      // Инициализация остальных popover (например, для информации о продукте)
+      var infoPopovers = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]:not(.qr-popover)'));
+      infoPopovers.forEach(function (popoverTriggerEl) {
+        var popover = new bootstrap.Popover(popoverTriggerEl);
+
+        // Добавляем обработчик клика для открытия/закрытия popover
+        popoverTriggerEl.addEventListener('click', function (event) {
+          if (popoverTriggerEl.getAttribute('aria-describedby')) {
+            popover.hide();
+          } else {
+            popover.show();
+          }
+          event.stopPropagation();
+        });
+      });
+
+      // Добавляем обработчик клика на document для закрытия всех popover
+      document.addEventListener('click', function (event) {
+        qrButtons.forEach(function (btn) {
+          if (btn.getAttribute('aria-describedby')) {
+            var popover = bootstrap.Popover.getInstance(btn);
+            if (popover) {
+              popover.hide();
+            }
+          }
+        });
+
+        infoPopovers.forEach(function (popoverTriggerEl) {
+          if (popoverTriggerEl.getAttribute('aria-describedby')) {
+            var popover = bootstrap.Popover.getInstance(popoverTriggerEl);
+            if (popover) {
+              popover.hide();
+            }
+          }
+        });
+      });
+    });
+  </script>
 {% endblock %}
