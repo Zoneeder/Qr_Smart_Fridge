@@ -9,7 +9,6 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 280px;
   padding: 1rem;
   background-color: #343a40;
   color: white;
@@ -18,4 +17,13 @@
 
 body {
   min-height: 100vh;
+}
+
+.nav-link.active {
+  background-color: #f9f9f9;
+  color: rgb(1, 1, 1) !important;
+}
+
+.nav-link {
+  color: white !important;
 }

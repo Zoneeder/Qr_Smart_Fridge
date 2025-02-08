@@ -223,6 +223,14 @@ def dismiss_notification(product_id):
         session['dismissed_notifications'] = dismissed
     return '', 204
 
+@app.route("/delete_product_from_index/<int:product_id>", methods=['POST'])
+def delete_product_from_index(product_id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM products WHERE id = ?', (product_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('/'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
