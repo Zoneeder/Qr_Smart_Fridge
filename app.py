@@ -4,10 +4,31 @@ from datetime import datetime
 import io
 import segno
 import json
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 app = Flask(__name__)
 app.secret_key = "secret"  # Замените на свой секретный ключ
+
+@app.template_filter('expiration_status')
+def expiration_status(exp_date_str):
+    """
+    Вычисляет статус срока годности по дате (формат 'YYYY-MM-DD').
+    Если дата истечения уже прошла – возвращает "вышел",
+    если до даты осталось 3 дня или меньше – возвращает "приближается",
+    иначе – "ещё далеко".
+    """
+    try:
+        exp_date = datetime.strptime(exp_date_str, '%Y-%m-%d').date()
+        today = datetime.today().date()
+        if exp_date < today:
+            return "вышел"
+        elif (exp_date - today).days <= 3:
+            return "приближается"
+        else:
+            return "ещё далеко"
+    except Exception as e:
+        return "н/д"
 
 @app.after_request
 def add_header(response):
@@ -20,20 +41,10 @@ def add_header(response):
 
 #######################################
 
-def get_db_connection_users():
-    conn = sqlite3.connect("database/users.db")
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def get_db_connection():
     conn = sqlite3.connect("database/fridge.db")
     conn.row_factory = sqlite3.Row
     return conn
-
-def get_db_connection_for_shopping_list():
-    connsl = sqlite3.connect('database/shopping_list.db')
-    connsl.row_factory = sqlite3.Row
-    return connsl
 
 #######################################
 
@@ -48,7 +59,6 @@ def register():
         password = request.form['password']
         confirm = request.form['confirm']
 
-        # Простая проверка заполненности полей
         if not username or not email or not password or not confirm:
             flash("Все поля обязательны для заполнения", "danger")
             return render_template('register.html')
@@ -57,15 +67,16 @@ def register():
             flash("Пароли не совпадают", "danger")
             return render_template('register.html')
 
-        conn = get_db_connection_users()
+        conn = get_db_connection()
         user = conn.execute('SELECT * FROM users WHERE username = ? OR email = ?', (username, email)).fetchone()
         if user:
             flash("Пользователь с таким именем или email уже существует", "danger")
             conn.close()
             return render_template('register.html')
 
-        # Сохраняем пароль в открытом виде (небезопасно!)
-        conn.execute('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', (username, email, password))
+        hashed_password = generate_password_hash(password)
+
+        conn.execute('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', (username, email, hashed_password))
         conn.commit()
         conn.close()
 
@@ -83,13 +94,12 @@ def login():
         username_or_email = request.form['username_or_email'].strip()
         password = request.form['password']
 
-        conn = get_db_connection_users()
-        # Ищем пользователя по username или email и сверяем пароль
-        user = conn.execute('SELECT * FROM users WHERE (username = ? OR email = ?) AND password = ?',
-                            (username_or_email, username_or_email, password)).fetchone()
+        conn = get_db_connection()
+        user = conn.execute('SELECT * FROM users WHERE username = ? OR email = ?', 
+                            (username_or_email, username_or_email)).fetchone()
         conn.close()
 
-        if user:
+        if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
             session['username'] = user['username']
             flash("Вы успешно вошли в систему", "success")
@@ -99,6 +109,7 @@ def login():
             return render_template('login.html')
 
     return render_template('login.html')
+
 
 #######################################
 # Выход пользователя
@@ -112,7 +123,7 @@ def logout():
 # Маршрут для главной страницы
 @app.route('/')
 def home():
-    # Если пользователь не аутентифицирован, можно перенаправить на страницу входа
+    # Если пользователь не аутентифицирован, перенаправляем на страницу входа
     if 'user_id' not in session:
         flash("Пожалуйста, войдите в систему", "danger")
         return redirect(url_for('login'))
@@ -121,10 +132,12 @@ def home():
 
     conn = get_db_connection()
     if search_query:
-        # Выбираем продукты только для текущего пользователя, которые соответствуют запросу поиска
-        products = conn.execute('SELECT * FROM products WHERE user_id = ? AND name LIKE ?', (session['user_id'], f'%{search_query}%')).fetchall()
+        # Фильтруем по имени или типу продукта
+        products = conn.execute('''
+            SELECT * FROM products 
+            WHERE user_id = ? AND (name LIKE ? OR type LIKE ?)
+        ''', (session['user_id'], f'%{search_query.lower()}%', f'%{search_query.lower()}%')).fetchall()
     else:
-        # Выбираем все продукты для текущего пользователя
         products = conn.execute('SELECT * FROM products WHERE user_id = ?', (session['user_id'],)).fetchall()
     conn.close()
     return render_template('index.html', active_page='home', products=products, search_query=search_query)
@@ -170,40 +183,50 @@ def qr_code():
 
 # Маршрут для страницы "Список покупок"
 @app.route('/shopping_list', methods=['GET', 'POST'])
-def products():
+def shopping_list():
     if 'user_id' not in session:
         flash("Пожалуйста, войдите в систему", "danger")
         return redirect(url_for('login'))
 
-    connsl = get_db_connection_for_shopping_list()
-    shopping_list = connsl.execute('SELECT * FROM shopping_list ORDER BY id DESC').fetchall()  # Получаем все продукты из базы данных
-    connsl.close()
+    conn = get_db_connection()
+    
+    # При GET-запросе выбираем записи только для текущего пользователя
+    if request.method == 'GET':
+        shopping_list = conn.execute(
+            'SELECT * FROM shopping_list WHERE user_id = ? ORDER BY id DESC',
+            (session['user_id'],)
+        ).fetchall()
+        conn.close()
+        return render_template('shopping_list.html', active_page='shopping_list', shopping_list=shopping_list)
+
+    # При POST-запросе добавляем новую запись с user_id
     if request.method == 'POST':
-        # Получаем данные из формы
         name = request.form['name']
         amount = float(request.form['amount'])
         amount_type = request.form['amount_type']
 
-        # Подключаемся к базе данных и добавляем продукт
-        connsl = get_db_connection_for_shopping_list()
-        connsl.execute('''
-        INSERT INTO shopping_list (name, amount, amount_type)
-        VALUES (?, ?, ?)
-        ''', (name, amount, amount_type))
-        connsl.commit()
-        connsl.close()
+        conn.execute('''
+            INSERT INTO shopping_list (user_id, name, amount, amount_type)
+            VALUES (?, ?, ?, ?)
+        ''', (session['user_id'], name, amount, amount_type))
+        conn.commit()
+        conn.close()
         
-        return redirect(url_for('products'))
-    
-    return render_template('shopping_list.html', active_page='shopping_list', shopping_list=shopping_list)
+        return redirect(url_for('shopping_list'))
 
 @app.route('/delete/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
-    connsl = get_db_connection_for_shopping_list()
-    connsl.execute('''DELETE FROM shopping_list WHERE id = ?''', (product_id,))
-    connsl.commit()
-    connsl.close()
-    return redirect(url_for('products'))
+    if 'user_id' not in session:
+        flash("Пожалуйста, войдите в систему", "danger")
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    conn.execute('''
+        DELETE FROM shopping_list WHERE id = ? AND user_id = ?
+    ''', (product_id, session['user_id']))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('shopping_list'))
 
 
 @app.route('/analytics_data')
@@ -259,7 +282,7 @@ def inject_notifications():
         if days_left <= warning_days:
             notifications.append({
                 'id': product['id'],
-                'message': f"{product['name']} скоро испортится! Осталось {days_left} дн."
+                'message': f"{product['name'].capitalize()} скоро испортится! Осталось {days_left} дн."
             })
     return dict(notifications=notifications, notifications_count=len(notifications))
 
@@ -274,15 +297,16 @@ def dismiss_notification(product_id):
 
 @app.route("/delete_product_from_index/<int:product_id>", methods=['POST'])
 def delete_product_from_index(product_id):
-    conn = get_db_connection()
-    conn.execute('''DELETE FROM products WHERE id = ?''', (product_id,))
-    conn.commit()
-    conn.close()
-    conn = get_db_connection()
-    conn.execute('''INSERT INTO analytics (user_id, data_delete) VALUES (?, ?)''', (session.get('user_id', -1), datetime.now().strftime('%Y-%m-%d')))
-    conn.commit()
-    conn.close()
-    return redirect(url_for('home'))
+    if request.method == 'POST':
+        conn = get_db_connection()
+        conn.execute('''DELETE FROM products WHERE id = ?''', (product_id,))
+        conn.commit()
+        conn.close()
+        conn = get_db_connection()
+        conn.execute('''INSERT INTO analytics (user_id, data_delete) VALUES (?, ?)''', (session.get('user_id', -1), datetime.now().strftime('%Y-%m-%d')))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('home'))
 
 
 @app.route('/qr_image/<int:product_id>')

@@ -7,7 +7,7 @@
     <hr style="width: 45%;">
     <form method="GET" action="{{ url_for('home') }}">
       <div class="input-group mb-3" style="width: 45%;">
-        <input type="text" class="form-control" placeholder="Поиск продуктов" name="search" value="{{ request.args.get('search', '') }}">
+        <input type="text" class="form-control" placeholder="Поиск по названию или типу продукта" name="search" value="{{ request.args.get('search', '') }}">
         <button class="btn btn-outline-secondary" type="submit">Поиск</button>
       </div>
     </form>
@@ -18,17 +18,19 @@
             <div class="card-body">
               <div class="d-flex justify-content-between">
                 <div>
-                  <h5 class="card-title">{{ product.name }}</h5>
-                  <p class="card-text">{{ product.type }}</p>
+                  <h5 class="card-title">{{ product.name|capitalize }} {{ ('<span data-bs-toggle="tooltip" title="Продукт содержит аллергены"><i class="bi bi-exclamation-triangle text-warning"></i></span>' if product.allergens else '') | safe }}</h5>
+                  <p class="card-text">{{ product.quantity }} {{ product.unit }}</p>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                   <div>
-                    <h6 align="center">Годен до:</h6>
-                    <p class="card-text mb-0">{{ product.expiration_date }}</p>
-                  </div>
+                    <h6 align="center">Годен до/статус:</h6>
+                    <p class="card-text mb-0">
+                      {{ product.expiration_date }}/{{ product.expiration_date | expiration_status }}
+                    </p>
+                  </div>                  
                   <div class="vr"></div>                 
                   <div>
-                    <button type="button" class="btn btn-lg btn-sm btn-outline-primary" data-bs-toggle="popover" data-bs-html="true" data-bs-content="Аллергены: <br> {{ product.allergens if product.allergens else '-' }} <hr> Дата изготовления: <br> {{ product.manufacture_date }} <hr> Количество: <br> {{ product.quantity }} {{ product.unit }} <hr> Энергетическая ценность: <br> {{ product.nutritional_value }}">
+                    <button type="button" class="btn btn-lg btn-sm btn-outline-primary" data-bs-toggle="popover" data-bs-html="true" data-bs-content="Аллергены: <br> {{ product.allergens|capitalize if product.allergens else '-' }} <hr> Дата изготовления: <br> {{ product.manufacture_date }} <hr> Тип: <br> {{ product.type|capitalize }} <hr> Энергетическая ценность: <br> {{ product.nutritional_value }} ккал">
                       <i class="bi bi-info-circle fs-6"></i>
                     </button>
                   </div>
@@ -117,5 +119,12 @@
         });
       });
     });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+      new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
   </script>
 {% endblock %}

@@ -9,158 +9,159 @@
   <!-- Блок для отображения камеры -->
   <div id="reader" style="width:500px; margin-top:20px;"></div>
   
-  <!-- Контейнер для карточек с отсканированной информацией -->
-  <div id="card-container" class="mt-4"></div>
+  <!-- Контейнер для отображения добавленных продуктов (скрыт до первого сканирования) -->
+  <div id="added-products-container" class="mt-4" style="display:none;">
+    <h2>Добавленные продукты</h2>
+    <!-- Контейнер для карточек с отсканированной информацией (карточки располагаются в столбик) -->
+    <div id="card-container" class="d-flex flex-column"></div>
+  </div>
 </div>
 
 <!-- Подключаем библиотеку html5-qrcode -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
-// Глобальная переменная для сканера
-var html5QrCode;
-// Множество для хранения уже отсканированных QR-кодов
-var scannedCodes = new Set();
+  // Функция для преобразования первой буквы в заглавную
+  function capitalize(text) {
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+  
+  // Глобальная переменная для сканера
+  var html5QrCode;
+  // Множество для хранения уже отсканированных QR-кодов
+  var scannedCodes = new Set();
 
-// Элементы управления
-var startButton = document.getElementById('start-camera');
-var stopButton  = document.getElementById('stop-camera');
+  // Элементы управления камерой
+  var startButton = document.getElementById('start-camera');
+  var stopButton  = document.getElementById('stop-camera');
 
-// При клике на кнопку "Включить камеру" запускаем сканирование
-startButton.addEventListener('click', function(){
-  // Инициализируем экземпляр html5QrCode в элементе с id "reader"
-  html5QrCode = new Html5Qrcode("reader");
+  // При клике на кнопку "Включить камеру" запускаем сканирование
+  startButton.addEventListener('click', function(){
+    // Инициализируем экземпляр html5QrCode в элементе с id "reader"
+    html5QrCode = new Html5Qrcode("reader");
 
-  // Получаем список камер
-  Html5Qrcode.getCameras().then(cameras => {
-      if (cameras && cameras.length) {
-          var cameraId = cameras[0].id;
-          html5QrCode.start(
-            cameraId,
-            {
-              fps: 10,    // Количество кадров в секунду для сканирования
-              qrbox: 250  // Размер области сканирования в пикселях
-            },
-            // Callback при успешном распознавании QR-кода
-            qrCodeMessage => {
-              // Проверяем, был ли уже отсканирован этот код
-              if (!scannedCodes.has(qrCodeMessage)) {
-                scannedCodes.add(qrCodeMessage);
-                // Формируем HTML для карточки с отсканированной информацией
-                var data = JSON.parse(qrCodeMessage);
-                console.log("Полученный объект:", data);
-                var cardHTML = `
-                  <div class="card mb-3 qr-card">
-                    <div class="card-body">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                          <h5 class="card-title">${data["name"]}</h5>
-                          <hr>
-                          <div class="d-flex justify-content-between align-items-center">
-                            <div class="me-2 ms-2">
-                              <h6>Тип:</h6>
-                              <p class="card-text">${data["type"]}</p>
-                            </div>
-                            <div class="vr"></div>
-                            <div class="me-2 ms-2">
-                              <h6>Дата изготовления:</h6>
-                              <p class="card-text">${data["manufacture_date"]}</p>
-                            </div>
-                            <div class="vr"></div>
-                            <div class="me-2 ms-2">
-                              <h6>Годен до:</h6>
-                              <p class="card-text">${data["expiration_date"]}</p>
-                            </div>
-                            <div class="vr"></div>
-                            <div class="me-2 ms-2">
-                              <h6>Количество:</h6>
-                              <p class="card-text">
-                                ${data["quantity"]} ${data["unit"]}
-                              </p>
-                            </div>
-                            <div class="vr"></div>
-                            <div class="me-2 ms-2">
-                              <h6>Энергетическая ценность:</h6>
-                              <p class="card-text">
-                                ${data["nutritional_value"]}
-                              </p>
-                            </div>
-                            <div class="vr"></div>
-                            <div class="ms-2">
-                              <h6>Аллергены:</h6>
-                              <p class="card-text">${ data["allergens"] || '-' }</p>
-                            </div>
+    // Получаем список доступных камер
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length) {
+            var cameraId = cameras[0].id;
+            html5QrCode.start(
+              cameraId,
+              {
+                fps: 10,    // Кадров в секунду
+                qrbox: 250  // Размер области сканирования в пикселях
+              },
+              // Callback при успешном распознавании QR-кода
+              qrCodeMessage => {
+                // Если данный QR-код ещё не был обработан
+                if (!scannedCodes.has(qrCodeMessage)) {
+                  scannedCodes.add(qrCodeMessage);
+                  // Разбираем JSON-данные из QR-кода
+                  var data = JSON.parse(qrCodeMessage);
+                  console.log("Полученный объект:", data);
+
+                  // Отправка данных сразу в базу данных
+                  fetch('/Qr-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                  })
+                  .then(response => response.json())
+                  .then(result => {
+                    if(result.success) {
+                      // Отображаем контейнер с добавленными продуктами, если он скрыт
+                      var addedProductsContainer = document.getElementById('added-products-container');
+                      if(addedProductsContainer.style.display === 'none'){
+                        addedProductsContainer.style.display = 'block';
+                      }
+                      // Формируем HTML для карточки с отсканированной информацией
+                      var cardHTML = `
+                        <div class="card mb-3 qr-card w-50">
+                          <div class="card-body">
+                              <div>
+                                <h5 class="card-title">${capitalize(data["name"])}</h5>
+                                <hr>
+                                <div class="d-flex justify-content-between align-items-center">
+                                  <div class="me-2 ms-2">
+                                    <h6>Тип:</h6>
+                                    <p class="card-text">${capitalize(data["type"])}</p>
+                                  </div>
+                                  <div class="vr"></div>
+                                  <div class="me-2 ms-2">
+                                    <h6>Дата изготовления:</h6>
+                                    <p class="card-text">${data["manufacture_date"]}</p>
+                                  </div>
+                                  <div class="vr"></div>
+                                  <div class="me-2 ms-2">
+                                    <h6>Годен до:</h6>
+                                    <p class="card-text">${data["expiration_date"]}</p>
+                                  </div>
+                                  <div class="vr"></div>
+                                  <div class="me-2 ms-2">
+                                    <h6>Количество:</h6>
+                                    <p class="card-text">
+                                      ${data["quantity"]} ${data["unit"]}
+                                    </p>
+                                  </div>
+                                  <div class="vr"></div>
+                                  <div class="me-2 ms-2">
+                                    <h6>Энергетическая ценность:</h6>
+                                    <p class="card-text">
+                                      ${data["nutritional_value"]}
+                                    </p>
+                                  </div>
+                                  <div class="vr"></div>
+                                  <div class="ms-2">
+                                    <h6>Аллергены:</h6>
+                                    <p class="card-text">${ data["allergens"] || '-' }</p>
+                                  </div>
+                                </div>
+                              </div>
                           </div>
                         </div>
-                        <div class="ms-5">
-                          <button class="btn btn-primary send-data-btn" data-info='${JSON.stringify(data)}'>
-                            <i class="bi bi-plus-lg fs-6"></i>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                `;
-                // Добавляем карточку в контейнер
-                document.getElementById('card-container').innerHTML += cardHTML;
-                console.log("Новый QR код распознан:", qrCodeMessage);
-              } else {
-                console.log("QR код уже был отсканирован:", qrCodeMessage);
+                      `;
+                      // Добавляем карточку в конец контейнера
+                      document.getElementById('card-container').insertAdjacentHTML('beforeend', cardHTML);
+                      console.log("Новый QR-код распознан и сохранен:", qrCodeMessage);
+                    } else {
+                      console.error("Ошибка сохранения QR-кода:", result.error);
+                    }
+                  })
+                  .catch(error => console.error("Ошибка отправки данных:", error));
+                } else {
+                  console.log("QR-код уже был отсканирован:", qrCodeMessage);
+                }
+              },
+              // Callback для обработки ошибок сканирования
+              errorMessage => {
+                console.log("Ошибка сканирования:", errorMessage);
               }
-            },
-            // Callback для обработки ошибок сканирования
-            errorMessage => {
-              console.log("Ошибка сканирования:", errorMessage);
-            }
-          ).catch(err => {
-            console.error("Невозможно запустить сканер:", err);
-          });
-          // Блокируем кнопку запуска и активируем кнопку остановки
-          startButton.disabled = true;
-          stopButton.disabled  = false;
-      } else {
-          alert("Камеры не найдены");
-      }
-  }).catch(err => {
-      console.error("Ошибка получения списка камер:", err);
-  });
-});
-
-// При клике на кнопку "Выключить камеру" останавливаем сканирование
-stopButton.addEventListener('click', function(){
-  if (html5QrCode) {
-    html5QrCode.stop().then(() => {
-      console.log("Сканирование остановлено");
-      // Активируем кнопку запуска и блокируем кнопку остановки
-      startButton.disabled = false;
-      stopButton.disabled  = true;
+            ).catch(err => {
+              console.error("Невозможно запустить сканер:", err);
+            });
+            // Блокируем кнопку запуска и активируем кнопку остановки
+            startButton.disabled = true;
+            stopButton.disabled  = false;
+        } else {
+            alert("Камеры не найдены");
+        }
     }).catch(err => {
-      console.error("Ошибка при остановке сканера:", err);
+        console.error("Ошибка получения списка камер:", err);
     });
-  }
-});
+  });
 
-// Обработчик клика по кнопке для отправки данных
-document.getElementById('card-container').addEventListener('click', function(event) {
-  let button = event.target.closest(".send-data-btn"); 
-  if (!button) return; 
-
-  let data = JSON.parse(button.getAttribute("data-info"));
-
-  fetch('/Qr-code', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  })
-  .then(response => response.json())
-  .then(result => {
-    console.log("Ответ сервера:", result);
-    if (result.success) {
-      card.remove();
+  // При клике на кнопку "Выключить камеру" останавливаем сканирование
+  stopButton.addEventListener('click', function(){
+    if (html5QrCode) {
+      html5QrCode.stop().then(() => {
+        console.log("Сканирование остановлено");
+        startButton.disabled = false;
+        stopButton.disabled  = true;
+      }).catch(err => {
+        console.error("Ошибка при остановке сканера:", err);
+      });
     }
-  })
-  .catch(error => console.error("Ошибка отправки:", error));
-});
+  });
 
-
+  // Обработчик для отправки данных по кнопке удалён, так как данные отправляются сразу при сканировании.
 </script>
 {% endblock %}
