@@ -231,20 +231,36 @@ def delete_product(product_id):
 
 @app.route('/analytics_data')
 def analytics_data():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user_id = session['user_id']
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     conn = get_db_connection()
     cursor = conn.cursor()
 
     if start_date and end_date:
-        cursor.execute("SELECT data_add, COUNT(*) FROM analytics WHERE data_add IS NOT NULL AND data_add BETWEEN ? AND ? GROUP BY data_add", (start_date, end_date))
+        cursor.execute(
+            "SELECT data_add, COUNT(*) FROM analytics WHERE user_id = ? AND data_add IS NOT NULL AND data_add BETWEEN ? AND ? GROUP BY data_add",
+            (user_id, start_date, end_date)
+        )
         added = {row[0]: row[1] for row in cursor.fetchall()}
-        cursor.execute("SELECT data_delete, COUNT(*) FROM analytics WHERE data_delete IS NOT NULL AND data_delete BETWEEN ? AND ? GROUP BY data_delete", (start_date, end_date))
+        cursor.execute(
+            "SELECT data_delete, COUNT(*) FROM analytics WHERE user_id = ? AND data_delete IS NOT NULL AND data_delete BETWEEN ? AND ? GROUP BY data_delete",
+            (user_id, start_date, end_date)
+        )
         deleted = {row[0]: row[1] for row in cursor.fetchall()}
     else:
-        cursor.execute("SELECT data_add, COUNT(*) FROM analytics WHERE data_add IS NOT NULL GROUP BY data_add")
+        cursor.execute(
+            "SELECT data_add, COUNT(*) FROM analytics WHERE user_id = ? AND data_add IS NOT NULL GROUP BY data_add",
+            (user_id,)
+        )
         added = {row[0]: row[1] for row in cursor.fetchall()}
-        cursor.execute("SELECT data_delete, COUNT(*) FROM analytics WHERE data_delete IS NOT NULL GROUP BY data_delete")
+        cursor.execute(
+            "SELECT data_delete, COUNT(*) FROM analytics WHERE user_id = ? AND data_delete IS NOT NULL GROUP BY data_delete",
+            (user_id,)
+        )
         deleted = {row[0]: row[1] for row in cursor.fetchall()}
 
     conn.close()
@@ -279,13 +295,19 @@ def inject_notifications():
             continue
         exp_date = datetime.strptime(product['expiration_date'], '%Y-%m-%d').date()
         days_left = (exp_date - today).days
-        if days_left <= warning_days:
+        # Если срок годности истёк
+        if days_left < 0:
+            notifications.append({
+                'id': product['id'],
+                'message': f"{product['name'].capitalize()} - истек срок годности!"
+            })
+        # Если срок годности подходит к концу (за 3 или менее дней до истечения)
+        elif days_left <= warning_days:
             notifications.append({
                 'id': product['id'],
                 'message': f"{product['name'].capitalize()} скоро испортится! Осталось {days_left} дн."
             })
     return dict(notifications=notifications, notifications_count=len(notifications))
-
 
 @app.route('/dismiss_notification/<int:product_id>', methods=['POST'])
 def dismiss_notification(product_id):
