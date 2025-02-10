@@ -13,17 +13,14 @@ app.secret_key = "secret"
 # Фильтр шаблона для определения статуса срока годности продукта
 @app.template_filter('expiration_status')
 def expiration_status(exp_date_str):
-    try:
-        exp_date = datetime.strptime(exp_date_str, '%Y-%m-%d').date()
-        today = datetime.today().date()
-        if exp_date < today:
-            return "вышел"
-        elif (exp_date - today).days <= 3:
-            return "приближается"
-        else:
-            return "ещё далеко"
-    except Exception as e:
-        return "н/д"
+    exp_date = datetime.strptime(exp_date_str, '%Y-%m-%d').date()
+    today = datetime.today().date()
+    if exp_date < today:
+        return "просрочен"
+    elif (exp_date - today).days <= 3:
+        return "истекает срок"
+    else:
+        return "годен"
 
 
 # Добавление заголовков для запрета кэша у браузера
