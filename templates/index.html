@@ -23,7 +23,7 @@
                 </div>
                 <div class="d-flex align-items-center gap-2">
                   <div>
-                    <h6 align="center">Годен до/статус:</h6>
+                    <h6 align="right">Годен до/статус:</h6>
                     <p class="card-text mb-0">
                       {{ product.expiration_date }}/{{ product.expiration_date | expiration_status }}
                     </p>
@@ -35,7 +35,6 @@
                     </button>
                   </div>
                   <div>
-                    <!-- Кнопка для QR, popover содержит изображение QR-кода, сгенерированное на сервере -->
                     <button type="button" class="btn btn-lg btn-sm btn-outline-primary qr-popover" 
                       data-product-id="{{ product.id }}" data-bs-toggle="popover" data-bs-trigger="manual">
                       <i class="bi bi-qr-code fs-6"></i>
@@ -59,7 +58,6 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      // Инициализация popover для кнопок с классом qr-popover, которые показывают QR-код
       var qrButtons = document.querySelectorAll('.qr-popover');
       qrButtons.forEach(function (btn) {
         var productId = btn.getAttribute('data-product-id');
@@ -71,7 +69,6 @@
           placement: 'right'
         });
 
-        // Добавляем обработчик клика для открытия/закрытия popover
         btn.addEventListener('click', function (event) {
           if (btn.getAttribute('aria-describedby')) {
             popover.hide();
@@ -82,12 +79,9 @@
         });
       });
 
-      // Инициализация остальных popover (например, для информации о продукте)
       var infoPopovers = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]:not(.qr-popover)'));
       infoPopovers.forEach(function (popoverTriggerEl) {
         var popover = new bootstrap.Popover(popoverTriggerEl);
-
-        // Добавляем обработчик клика для открытия/закрытия popover
         popoverTriggerEl.addEventListener('click', function (event) {
           if (popoverTriggerEl.getAttribute('aria-describedby')) {
             popover.hide();
@@ -98,7 +92,6 @@
         });
       });
 
-      // Добавляем обработчик клика на document для закрытия всех popover
       document.addEventListener('click', function (event) {
         qrButtons.forEach(function (btn) {
           if (btn.getAttribute('aria-describedby')) {

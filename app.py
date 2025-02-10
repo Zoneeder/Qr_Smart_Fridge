@@ -6,18 +6,13 @@ import segno
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
 
-
 app = Flask(__name__)
-app.secret_key = "secret"  # Замените на свой секретный ключ
+app.secret_key = "secret"
 
+
+# Фильтр шаблона для определения статуса срока годности продукта
 @app.template_filter('expiration_status')
 def expiration_status(exp_date_str):
-    """
-    Вычисляет статус срока годности по дате (формат 'YYYY-MM-DD').
-    Если дата истечения уже прошла – возвращает "вышел",
-    если до даты осталось 3 дня или меньше – возвращает "приближается",
-    иначе – "ещё далеко".
-    """
     try:
         exp_date = datetime.strptime(exp_date_str, '%Y-%m-%d').date()
         today = datetime.today().date()
@@ -30,6 +25,8 @@ def expiration_status(exp_date_str):
     except Exception as e:
         return "н/д"
 
+
+# Добавление заголовков для запрета кэша у браузера
 @app.after_request
 def add_header(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -37,20 +34,15 @@ def add_header(response):
     response.headers['Expires'] = '0'
     return response
 
-# Функции для подключения к базе данных
 
-#######################################
-
+# Функция для получения соединения с базой данных
 def get_db_connection():
     conn = sqlite3.connect("database/fridge.db")
     conn.row_factory = sqlite3.Row
     return conn
 
-#######################################
 
-#######################################
-# Регистрация пользователя
-#######################################
+# Регистрация нового пользователя
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -59,10 +51,12 @@ def register():
         password = request.form['password']
         confirm = request.form['confirm']
 
+        # Проверка заполненности всех полей
         if not username or not email or not password or not confirm:
             flash("Все поля обязательны для заполнения", "danger")
             return render_template('register.html')
 
+        # Проверка совпадения паролей
         if password != confirm:
             flash("Пароли не совпадают", "danger")
             return render_template('register.html')
@@ -85,9 +79,8 @@ def register():
 
     return render_template('register.html')
 
-#######################################
-# Вход пользователя
-#######################################
+
+# Авторизация пользователя
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -111,28 +104,25 @@ def login():
     return render_template('login.html')
 
 
-#######################################
-# Выход пользователя
-#######################################
+# Выход пользователя из системы
 @app.route('/logout')
 def logout():
     session.clear()
     flash("Вы вышли из системы", "info")
     return redirect(url_for('home'))
 
-# Маршрут для главной страницы
+
+# Главная страница с отображением продуктов конкретного пользователя
 @app.route('/')
 def home():
-    # Если пользователь не аутентифицирован, перенаправляем на страницу входа
     if 'user_id' not in session:
         flash("Пожалуйста, войдите в систему", "danger")
         return redirect(url_for('login'))
 
     search_query = request.args.get('search', '')
-
     conn = get_db_connection()
     if search_query:
-        # Фильтруем по имени или типу продукта
+        # Поиск продуктов по имени или типу с учетом user_id
         products = conn.execute('''
             SELECT * FROM products 
             WHERE user_id = ? AND (name LIKE ? OR type LIKE ?)
@@ -143,20 +133,21 @@ def home():
     return render_template('index.html', active_page='home', products=products, search_query=search_query)
 
 
-# Маршрут для страницы "Отсканировать Qr-код"
+# Обработка QR-кода: добавление продукта и запись в аналитику
 @app.route('/Qr-code', methods=['GET', 'POST'])
 def qr_code():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            print("Полученные данные:", data)  # Лог в консоль
+            print("Полученные данные:", data)
 
             conn = get_db_connection()
+            # Вставка нового продукта с привязкой к user_id
             conn.execute('''
                 INSERT INTO products (user_id, name, type, manufacture_date, expiration_date, quantity, unit, nutritional_value, allergens)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                session.get('user_id', -1),  # Временно ставим 1, если нет сессии
+                session.get('user_id', -1),
                 data["name"],
                 data["type"],
                 data["manufacture_date"],
@@ -164,11 +155,13 @@ def qr_code():
                 data["quantity"],
                 data["unit"],
                 data["nutritional_value"],
-                data.get("allergens", "-")  # Если нет аллергенов, ставим "-"
+                data.get("allergens", "-")
             ))
             conn.commit()
             conn.close()
+            
             conn = get_db_connection()
+            # Запись события добавления в аналитику
             conn.execute('''INSERT INTO analytics (user_id, data_add) VALUES (?, ?)''', (session.get('user_id', -1), datetime.now().strftime('%Y-%m-%d')))
             conn.commit()
             conn.close()
@@ -181,7 +174,8 @@ def qr_code():
 
     return render_template('Qr-code.html', active_page='Qr-code')
 
-# Маршрут для страницы "Список покупок"
+
+# Страница со списком покупок
 @app.route('/shopping_list', methods=['GET', 'POST'])
 def shopping_list():
     if 'user_id' not in session:
@@ -190,7 +184,6 @@ def shopping_list():
 
     conn = get_db_connection()
     
-    # При GET-запросе выбираем записи только для текущего пользователя
     if request.method == 'GET':
         shopping_list = conn.execute(
             'SELECT * FROM shopping_list WHERE user_id = ? ORDER BY id DESC',
@@ -199,7 +192,6 @@ def shopping_list():
         conn.close()
         return render_template('shopping_list.html', active_page='shopping_list', shopping_list=shopping_list)
 
-    # При POST-запросе добавляем новую запись с user_id
     if request.method == 'POST':
         name = request.form['name']
         amount = float(request.form['amount'])
@@ -214,6 +206,8 @@ def shopping_list():
         
         return redirect(url_for('shopping_list'))
 
+
+# Удаление продукта из списка покупок (проверка по user_id)
 @app.route('/delete/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
     if 'user_id' not in session:
@@ -229,8 +223,16 @@ def delete_product(product_id):
     return redirect(url_for('shopping_list'))
 
 
+# Отображение страницы аналитики
+@app.route('/analytics')
+def analytics():
+    return render_template('analytics.html', active_page='analytics')
+
+
+# Получение данных аналитики для текущего пользователя
 @app.route('/analytics_data')
 def analytics_data():
+    # Проверка авторизации
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -265,6 +267,7 @@ def analytics_data():
 
     conn.close()
 
+    # Формирование итогового словаря аналитики по датам
     analytics = {}
     for date in set(added.keys()) | set(deleted.keys()):
         analytics[date] = {
@@ -274,34 +277,32 @@ def analytics_data():
     return jsonify(analytics)
 
 
-
+# Контекстный процессор для уведомлений о продуктах с приближающимся сроком годности
 @app.context_processor
 def inject_notifications():
-    # Если пользователь не авторизован, не отображаем уведомления
+    # Если пользователь не авторизован, возвращаем пустой список уведомлений
     if 'user_id' not in session:
         return dict(notifications=[], notifications_count=0)
         
     dismissed = session.get('dismissed_notifications', [])
     conn = get_db_connection()
-    # Выбираем продукты для текущего пользователя
     products = conn.execute('SELECT id, name, expiration_date FROM products WHERE user_id = ?', (session['user_id'],)).fetchall()
     conn.close()
 
     notifications = []
     today = datetime.today().date()
     warning_days = 3
+    # Формирование уведомлений для каждого продукта
     for product in products:
         if product['id'] in dismissed:
             continue
         exp_date = datetime.strptime(product['expiration_date'], '%Y-%m-%d').date()
         days_left = (exp_date - today).days
-        # Если срок годности истёк
         if days_left < 0:
             notifications.append({
                 'id': product['id'],
                 'message': f"{product['name'].capitalize()} - истек срок годности!"
             })
-        # Если срок годности подходит к концу (за 3 или менее дней до истечения)
         elif days_left <= warning_days:
             notifications.append({
                 'id': product['id'],
@@ -309,6 +310,8 @@ def inject_notifications():
             })
     return dict(notifications=notifications, notifications_count=len(notifications))
 
+
+# Отклонение (удаление) уведомления по product_id
 @app.route('/dismiss_notification/<int:product_id>', methods=['POST'])
 def dismiss_notification(product_id):
     dismissed = session.get('dismissed_notifications', [])
@@ -317,6 +320,8 @@ def dismiss_notification(product_id):
         session['dismissed_notifications'] = dismissed
     return '', 204
 
+
+# Удаление продукта с главного хранилища и запись в аналитику удаления
 @app.route("/delete_product_from_index/<int:product_id>", methods=['POST'])
 def delete_product_from_index(product_id):
     if request.method == 'POST':
@@ -331,6 +336,7 @@ def delete_product_from_index(product_id):
         return redirect(url_for('home'))
 
 
+# Генерация QR-кода для продукта по его id
 @app.route('/qr_image/<int:product_id>')
 def qr_image(product_id):
     conn = get_db_connection()
@@ -341,19 +347,12 @@ def qr_image(product_id):
 
     product_dict = dict(product)
     data = json.dumps(product_dict, ensure_ascii=False)
-    # Генерируем QR-код с помощью segno
     qr_code = segno.make(data)
-    # Создаем BytesIO буфер для хранения изображения
     output = io.BytesIO()
-    # Сохраняем QR-код в формате PNG в буфер
     qr_code.save(output, kind='svg', scale=20)
     output.seek(0)
-    # Отправляем изображение в ответ
     return send_file(output, mimetype='image/svg+xml')
 
-@app.route('/analytics')
-def analytics():
-    return render_template('analytics.html', active_page='analytics')
 
 if __name__ == '__main__':
     app.run(debug=True)

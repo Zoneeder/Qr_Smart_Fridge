@@ -20,61 +20,58 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <canvas id="analyticsChart"></canvas>
 <script>
-// Функция, генерирующая массив дат от start до end (в формате YYYY-MM-DD)
-function getDateRange(start, end) {
-    const dates = [];
-    let currentDate = new Date(start);
-    const endDate = new Date(end);
-    while (currentDate <= endDate) {
-        dates.push(currentDate.toISOString().split('T')[0]);
-        currentDate.setDate(currentDate.getDate() + 1);
+    function getDateRange(start, end) {
+        const dates = [];
+        let currentDate = new Date(start);
+        const endDate = new Date(end);
+        while (currentDate <= endDate) {
+            dates.push(currentDate.toISOString().split('T')[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return dates;
     }
-    return dates;
-}
 
-function loadChart() {
-    const start_date = document.getElementById('start_date').value;
-    const end_date = document.getElementById('end_date').value;
-    let url = '/analytics_data';
-    if(start_date && end_date){
-        url += `?start_date=${start_date}&end_date=${end_date}`;
-    }
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            // Формируем полный диапазон дат между выбранными датами
-            const dateRange = (start_date && end_date) ? getDateRange(start_date, end_date) : Object.keys(data).sort();
-            
-            // Для каждой даты, если данных нет, подставляем 0
-            const added = dateRange.map(date => data[date] ? data[date].added : 0);
-            const deleted = dateRange.map(date => data[date] ? data[date].deleted : 0);
+    function loadChart() {
+        const start_date = document.getElementById('start_date').value;
+        const end_date = document.getElementById('end_date').value;
+        let url = '/analytics_data';
+        if(start_date && end_date){
+            url += `?start_date=${start_date}&end_date=${end_date}`;
+        }
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const dateRange = (start_date && end_date) ? getDateRange(start_date, end_date) : Object.keys(data).sort();
+                
+                const added = dateRange.map(date => data[date] ? data[date].added : 0);
+                const deleted = dateRange.map(date => data[date] ? data[date].deleted : 0);
 
-            const ctx = document.getElementById('analyticsChart').getContext('2d');
-            if(window.myChart){
-                window.myChart.destroy();
-            }
-            window.myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: dateRange,
-                    datasets: [
-                        { label: 'Добавленные продукты', data: added, borderColor: 'green', fill: false },
-                        { label: 'Удалённые продукты', data: deleted, borderColor: 'red', fill: false }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false, // позволяет использовать размеры контейнера
-                    plugins: {
-                        legend: { position: 'top' },
-                        title: { display: true, text: 'Аналитика добавленных и удалённых продуктов' }
-                    }
+                const ctx = document.getElementById('analyticsChart').getContext('2d');
+                if(window.myChart){
+                    window.myChart.destroy();
                 }
-            });
-        })
-        .catch(error => console.error('Ошибка загрузки данных:', error));
-}
+                window.myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dateRange,
+                        datasets: [
+                            { label: 'Добавленные продукты', data: added, borderColor: 'green', fill: false },
+                            { label: 'Удалённые продукты', data: deleted, borderColor: 'red', fill: false }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            title: { display: true, text: 'Аналитика добавленных и удалённых продуктов' }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Ошибка загрузки данных:', error));
+    }
 </script>
 
 {% endblock %}

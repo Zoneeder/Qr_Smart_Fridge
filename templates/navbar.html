@@ -86,9 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
       fetch('/dismiss_notification/' + productId, { method: 'POST' })
         .then(function(response) {
           if (response.ok) {
-            // Удаляем уведомление из выпадающего списка
             self.parentElement.remove();
-            // Обновляем счетчик уведомлений (если он есть)
             var badge = document.querySelector('.badge');
             if (badge) {
               var count = parseInt(badge.innerText) - 1;

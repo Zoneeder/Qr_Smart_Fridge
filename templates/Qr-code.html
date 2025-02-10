@@ -6,60 +6,44 @@
   <button id="start-camera" class="btn btn-primary">Включить камеру</button>
   <button id="stop-camera" class="btn btn-danger" disabled>Выключить камеру</button>
   
-  <!-- Блок для отображения камеры -->
   <div id="reader" style="width:500px; margin-top:20px;"></div>
   
-  <!-- Контейнер для отображения добавленных продуктов (скрыт до первого сканирования) -->
   <div id="added-products-container" class="mt-4" style="display:none;">
     <h2>Добавленные продукты</h2>
-    <!-- Контейнер для карточек с отсканированной информацией (карточки располагаются в столбик) -->
     <div id="card-container" class="d-flex flex-column"></div>
   </div>
 </div>
 
-<!-- Подключаем библиотеку html5-qrcode -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
-  // Функция для преобразования первой буквы в заглавную
   function capitalize(text) {
     if (!text) return '';
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
-  
-  // Глобальная переменная для сканера
+
   var html5QrCode;
-  // Множество для хранения уже отсканированных QR-кодов
   var scannedCodes = new Set();
 
-  // Элементы управления камерой
   var startButton = document.getElementById('start-camera');
   var stopButton  = document.getElementById('stop-camera');
 
-  // При клике на кнопку "Включить камеру" запускаем сканирование
   startButton.addEventListener('click', function(){
-    // Инициализируем экземпляр html5QrCode в элементе с id "reader"
     html5QrCode = new Html5Qrcode("reader");
 
-    // Получаем список доступных камер
     Html5Qrcode.getCameras().then(cameras => {
         if (cameras && cameras.length) {
             var cameraId = cameras[0].id;
             html5QrCode.start(
               cameraId,
               {
-                fps: 10,    // Кадров в секунду
-                qrbox: 250  // Размер области сканирования в пикселях
+                fps: 10,
+                qrbox: 250
               },
-              // Callback при успешном распознавании QR-кода
               qrCodeMessage => {
-                // Если данный QR-код ещё не был обработан
                 if (!scannedCodes.has(qrCodeMessage)) {
                   scannedCodes.add(qrCodeMessage);
-                  // Разбираем JSON-данные из QR-кода
                   var data = JSON.parse(qrCodeMessage);
                   console.log("Полученный объект:", data);
-
-                  // Отправка данных сразу в базу данных
                   fetch('/Qr-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -68,12 +52,10 @@
                   .then(response => response.json())
                   .then(result => {
                     if(result.success) {
-                      // Отображаем контейнер с добавленными продуктами, если он скрыт
                       var addedProductsContainer = document.getElementById('added-products-container');
                       if(addedProductsContainer.style.display === 'none'){
                         addedProductsContainer.style.display = 'block';
                       }
-                      // Формируем HTML для карточки с отсканированной информацией
                       var cardHTML = `
                         <div class="card mb-3 qr-card w-50">
                           <div class="card-body">
@@ -119,7 +101,6 @@
                           </div>
                         </div>
                       `;
-                      // Добавляем карточку в конец контейнера
                       document.getElementById('card-container').insertAdjacentHTML('beforeend', cardHTML);
                       console.log("Новый QR-код распознан и сохранен:", qrCodeMessage);
                     } else {
@@ -131,14 +112,12 @@
                   console.log("QR-код уже был отсканирован:", qrCodeMessage);
                 }
               },
-              // Callback для обработки ошибок сканирования
               errorMessage => {
                 console.log("Ошибка сканирования:", errorMessage);
               }
             ).catch(err => {
               console.error("Невозможно запустить сканер:", err);
             });
-            // Блокируем кнопку запуска и активируем кнопку остановки
             startButton.disabled = true;
             stopButton.disabled  = false;
         } else {
@@ -149,7 +128,6 @@
     });
   });
 
-  // При клике на кнопку "Выключить камеру" останавливаем сканирование
   stopButton.addEventListener('click', function(){
     if (html5QrCode) {
       html5QrCode.stop().then(() => {
@@ -162,6 +140,5 @@
     }
   });
 
-  // Обработчик для отправки данных по кнопке удалён, так как данные отправляются сразу при сканировании.
 </script>
 {% endblock %}
