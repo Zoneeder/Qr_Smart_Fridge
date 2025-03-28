@@ -37,8 +37,9 @@ python app.py
 ## Контакты
 Разработчики:
 - Дмитрий Хомяков - [dima.khst@gmail.com](mailto:dima.khst@gmail.com)
-- Георгий Никитин - [gorgio1327@gmail.com](mailto:gorgio1327@gmail.com)
-- Самойлов Константин - [samojlov.k@sch2009.net](mailto:samojlov.k@sch2009.net)
 
 ## Ссылка на видеоролик
 https://rutube.ru/video/db1c4d47db0c7b5dfbc9bec8ac979796/
+
+## P.S.
+Вся работа сделана Хомяковым Дмитрием, остальные участники не принимали участия в проекте
