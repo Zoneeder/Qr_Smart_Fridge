@@ -53,9 +53,6 @@ class Analytics(db.Model):
     data_add = db.Column(db.String(20), nullable=True)
     data_delete = db.Column(db.String(20), nullable=True)
 
-with app.app_context():
-    db.create_all()
-
 @app.template_filter('expiration_status')
 def expiration_status(exp_date_str):
     exp_date = datetime.strptime(exp_date_str, '%Y-%m-%d').date()
